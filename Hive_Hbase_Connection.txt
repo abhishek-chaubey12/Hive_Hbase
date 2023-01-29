@@ -1,0 +1,101 @@
+Establishing Hive to Hbase connection:
+
+step 1:
+
+Hbase command:
+hbase(main):019:0> create 'student_marks','personal_details','exams_info'
+
+
+step 2:
+
+Create an external table in Hive:
+
+
+CREATE EXTERNAL TABLE IF not exists hbase_student_marks
+(key string,
+gender string,
+group string,
+parental_level_of_education string,
+lunch string,
+test_preparation_course string,
+math_score int,
+reading_score int,
+writing_score int
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES
+("hbase.columns.mapping"=":key,personal_details:gender,personal_details:group,personal_details:parental_level_of_education,personal_details:lunch,exams_info:test_preparation_course,exams_info:math_score,exams_info:reading_score,exams_info:writing_score")
+TBLPROPERTIES("hbase.table.name"="student_marks")
+;
+
+
+step 3:
+Create an stagging table in hive:
+
+
+CREATE EXTERNAL TABLE IF not exists stg_hbase_student_marks
+(key string,
+gender string,
+group string,
+parental_level_of_education string,
+lunch string,
+test_preparation_course string,
+math_score int,
+reading_score int,
+writing_score int
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+TBLPROPERTIES("skip.header.line.count"="1")
+;
+
+
+
+step 4:
+
+Load the data into a stage table:
+
+hive> Load data local inpath '/home/cloudera/exams.csv' into table stg_hbase_student_marks;
+
+
+step 5:
+
+Insert the data from stage table to main hive table:
+
+hive> insert into table hbase_student_marks select * from stg_hbase_student_marks;
+
+step 6:
+
+Fetch all the rows in Hive:
+
+hive> select * from hbase_student_marks;
+
+hbase(main):019:0> scan 'student_marks'
+
+
+step 7:
+
+Fetch all the rows in Hbase:
+
+hbase(main):019:0> count 'student_marks'
+
+
+step 8:
+
+Adding more details through Hbase:
+
+hbase(main):019:0> get 'student_marks','Anuj','personal_details'
+
+hbase(main):019:0> put 'student_marks','Karan','personal_details:gender','Male'
+
+hbase(main):019:0> get 'student_marks','Karan','personal_details:gender'
+
+
+step 9:
+
+Fetching added details through Hive:
+
+Hive> select * from hbase_student_marks where key ='Karan' ;
+
